@@ -8,7 +8,6 @@
 #include <errno.h>
 #include <err.h>
 
-#define BUF_SIZE 128
 #define NLOOP 1000
 #define NSECS_PER_SEC 1000000000UL
 
@@ -24,22 +23,23 @@ int main (int argc, char *argv[])
   progname = argv[0];
   if (argc != 3) {
     fprintf(stderr, "usage %s <filename> <block size[KB]>\n", progname);
+    exit(EXIT_FAILURE);
   }
 
   int fd;
-  // fd = open(argv[1], O_CREAT|O_WRONLY|O_TRUNC|O_DIRECT, 0755);
-  // fd = open(argv[1], O_CREAT|O_WRONLY|O_DIRECT, 0755);
-  fd = open(argv[1], O_CREAT|O_RDWR|O_SYNC|O_TRUNC, 0755);
+  fd = open(argv[1], O_CREAT|O_RDWR|O_SYNC|O_TRUNC|O_DIRECT, 0666);
   if (fd == -1) {
     perror(argv[1]);
     exit(EXIT_FAILURE);
   }
+  printf("filename:%s\n", argv[1]);
 
   int block_size = atoi(argv[2]) * 1024;
   if (block_size == 0) {
     fprintf(stderr, "block size should be > 0: %s\n", argv[2]);
     exit(EXIT_FAILURE);
   }
+  printf("block size:%d\n", block_size);
 
   char *buf;
   int e;
@@ -54,15 +54,11 @@ int main (int argc, char *argv[])
     buf[i] = 'a';
   }
   buf[block_size] = '\0';
-  printf("buf:%s\n",buf);
   struct timespec before, after;
 
-  // printf("strlen(buf) = %d\n", strlen(buf));
   clock_gettime(CLOCK_MONOTONIC, &before);
-  int wnum;
   for ( i = 0; i < NLOOP; i++) {
-    wnum = write(fd, buf, strlen(buf));
-    printf("wnum: %d\n", wnum);
+    write(fd, buf, strlen(buf));
   }
   clock_gettime(CLOCK_MONOTONIC, &after);
   printf("diff: %f\n", (double)diff_nsec(before, after));
