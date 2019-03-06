@@ -8,14 +8,12 @@
 #include <errno.h>
 #include <err.h>
 
-#define NLOOP 1000
-#define NSECS_PER_SEC 1000000000UL
+#define NLOOP 1000000
 
 static char *progname;
 
 static inline long diff_nsec(struct timespec before, struct timespec after) {
-        return ((after.tv_sec * NSECS_PER_SEC + after.tv_nsec)
-                        - (before.tv_sec * NSECS_PER_SEC + before.tv_nsec));
+        return after.tv_sec - before.tv_sec;
 }
 
 int main (int argc, char *argv[])
@@ -61,7 +59,8 @@ int main (int argc, char *argv[])
     write(fd, buf, strlen(buf));
   }
   clock_gettime(CLOCK_MONOTONIC, &after);
-  printf("diff: %f\n", (double)diff_nsec(before, after));
+  printf("time: %f\n", (double)diff_nsec(before, after));
+  printf("iops: %f\n", (double)NLOOP/diff_nsec(before, after));
 
   if (close(fd) == -1) {
     fprintf(stderr, "close() failed");
