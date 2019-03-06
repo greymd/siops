@@ -4,28 +4,32 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <time.h>
+#include <sys/time.h>
 #include <errno.h>
 #include <err.h>
 
-#define NLOOP 1000000
+// use fixed sector size because its purpose is just to check iops
+#define SECTOR_SIZE 512
+#define FILE_SIZE 100 * 1024 * 1024
 
 static char *progname;
 
-static inline long diff_nsec(struct timespec before, struct timespec after) {
-        return after.tv_sec - before.tv_sec;
+static inline double diff_sec(struct timeval before, struct timeval after) {
+  double sec = (double)(after.tv_sec - before.tv_sec);
+  double nsec = (double)(after.tv_usec - before.tv_usec);
+  return sec + nsec / 1000.0 / 1000.0;
 }
 
 int main (int argc, char *argv[])
 {
   progname = argv[0];
   if (argc != 3) {
-    fprintf(stderr, "usage %s <filename> <block size[KB]>\n", progname);
+    fprintf(stderr, "usage %s <filename> <block size[KiB]>\n", progname);
     exit(EXIT_FAILURE);
   }
 
   int fd;
-  fd = open(argv[1], O_CREAT|O_RDWR|O_SYNC|O_TRUNC|O_DIRECT, 0666);
+  fd = open(argv[1], O_CREAT|O_RDWR|O_TRUNC|O_DIRECT, 0666);
   if (fd == -1) {
     perror(argv[1]);
     exit(EXIT_FAILURE);
@@ -37,11 +41,15 @@ int main (int argc, char *argv[])
     fprintf(stderr, "block size should be > 0: %s\n", argv[2]);
     exit(EXIT_FAILURE);
   }
-  printf("block size:%d\n", block_size);
+  printf("block size (KiB):%d\n", block_size / 1024);
+  printf("file size (MiB):%d\n", FILE_SIZE / 1024 / 1024);
+
+  int nloop = FILE_SIZE / block_size;
+  printf("number of system call:%d\n", nloop);
 
   char *buf;
   int e;
-  e = posix_memalign((void **)&buf, 512, block_size + 1);
+  e = posix_memalign((void **)&buf, SECTOR_SIZE, block_size + 1);
   if (e) {
     errno = e;
     err(EXIT_FAILURE, "posix_memalign() failed");
@@ -52,15 +60,18 @@ int main (int argc, char *argv[])
     buf[i] = 'a';
   }
   buf[block_size] = '\0';
-  struct timespec before, after;
+  struct timeval before, after;
 
-  clock_gettime(CLOCK_MONOTONIC, &before);
-  for ( i = 0; i < NLOOP; i++) {
+  gettimeofday(&before, NULL);
+  for ( i = 0; i < nloop; i++) {
     write(fd, buf, strlen(buf));
   }
-  clock_gettime(CLOCK_MONOTONIC, &after);
-  printf("time: %f\n", (double)diff_nsec(before, after));
-  printf("iops: %f\n", (double)NLOOP/diff_nsec(before, after));
+  gettimeofday(&after, NULL);
+
+  double sec = diff_sec(before, after);
+  printf("time: %f\n", sec);
+  printf("iops: %f\n", nloop/sec);
+  printf("MiB/s: %f\n", nloop * block_size / 1024 / 1024 / sec);
 
   if (close(fd) == -1) {
     fprintf(stderr, "close() failed");
