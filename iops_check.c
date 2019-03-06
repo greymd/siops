@@ -5,10 +5,14 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
+#include <errno.h>
+#include <err.h>
 
 #define BUF_SIZE 128
 #define NLOOP 1000
 #define NSECS_PER_SEC 1000000000UL
+
+static char *progname;
 
 static inline long diff_nsec(struct timespec before, struct timespec after) {
         return ((after.tv_sec * NSECS_PER_SEC + after.tv_nsec)
@@ -17,21 +21,39 @@ static inline long diff_nsec(struct timespec before, struct timespec after) {
 
 int main (int argc, char *argv[])
 {
+  progname = argv[0];
+  if (argc != 3) {
+    fprintf(stderr, "usage %s <filename> <block size[KB]>\n", progname);
+  }
+
   int fd;
-  char buf[BUF_SIZE + 1];
   // fd = open(argv[1], O_CREAT|O_WRONLY|O_TRUNC|O_DIRECT, 0755);
   // fd = open(argv[1], O_CREAT|O_WRONLY|O_DIRECT, 0755);
-  fd = open(argv[1], O_RDWR|O_DIRECT, 0755);
+  fd = open(argv[1], O_CREAT|O_RDWR|O_SYNC|O_TRUNC, 0755);
   if (fd == -1) {
     perror(argv[1]);
     exit(EXIT_FAILURE);
   }
 
+  int block_size = atoi(argv[2]) * 1024;
+  if (block_size == 0) {
+    fprintf(stderr, "block size should be > 0: %s\n", argv[2]);
+    exit(EXIT_FAILURE);
+  }
+
+  char *buf;
+  int e;
+  e = posix_memalign((void **)&buf, 512, block_size + 1);
+  if (e) {
+    errno = e;
+    err(EXIT_FAILURE, "posix_memalign() failed");
+  }
+
   int i;
-  for ( i = 0; i < BUF_SIZE; i++) {
+  for ( i = 0; i < block_size; i++) {
     buf[i] = 'a';
   }
-  buf[BUF_SIZE] = '\0';
+  buf[block_size] = '\0';
   printf("buf:%s\n",buf);
   struct timespec before, after;
 
