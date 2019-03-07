@@ -35,7 +35,6 @@ int main (int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
   printf("block size (KiB):%d\n", block_size / 1024);
-  printf("file size (MiB):%d\n", FILE_SIZE / 1024 / 1024);
 
   int write_flag;
   if (!strcmp(argv[3], "r")) {
@@ -61,8 +60,12 @@ int main (int argc, char *argv[])
 
 
   int nloop;
-  if (argc == 4) nloop  = FILE_SIZE / block_size;
-  if (argc == 5) nloop = atoi(argv[4]);
+  if (argc == 4) {
+    nloop  = FILE_SIZE / block_size;
+    printf("file size (MiB):%d\n", FILE_SIZE / 1024 / 1024);
+  } else if (argc == 5) {
+    nloop = atoi(argv[4]);
+  }
   if (nloop == 0) {
     fprintf(stderr, "block size should be > 0: %s\n", argv[2]);
     exit(EXIT_FAILURE);
