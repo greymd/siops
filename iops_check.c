@@ -24,8 +24,8 @@ static inline double diff_sec(struct timeval before, struct timeval after) {
 int main (int argc, char *argv[])
 {
   progname = argv[0];
-  if (argc != 4) {
-    fprintf(stderr, "usage %s <filename> <block size[KiB]> <r/w>\n", progname);
+  if (argc != 4 && argc != 5) {
+    fprintf(stderr, "usage %s <filename> <block size[KiB]> <r/w> [<# of loops>]\n", progname);
     exit(EXIT_FAILURE);
   }
 
@@ -47,6 +47,7 @@ int main (int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
 
+
   int fd;
   if (write_flag)
     fd = open(argv[1], O_CREAT|O_RDWR|O_TRUNC|O_DIRECT, 0666);
@@ -59,7 +60,13 @@ int main (int argc, char *argv[])
   printf("filename:%s\n", argv[1]);
 
 
-  int nloop = FILE_SIZE / block_size;
+  int nloop;
+  if (argc == 4) nloop  = FILE_SIZE / block_size;
+  if (argc == 5) nloop = atoi(argv[4]);
+  if (nloop == 0) {
+    fprintf(stderr, "block size should be > 0: %s\n", argv[2]);
+    exit(EXIT_FAILURE);
+  }
   printf("number of system call:%d\n", nloop);
 
   char *buf;
