@@ -29,14 +29,6 @@ int main (int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
 
-  int fd;
-  fd = open(argv[1], O_CREAT|O_RDWR|O_TRUNC|O_DIRECT, 0666);
-  if (fd == -1) {
-    perror(argv[1]);
-    exit(EXIT_FAILURE);
-  }
-  printf("filename:%s\n", argv[1]);
-
   int block_size = atoi(argv[2]) * 1024;
   if (block_size == 0) {
     fprintf(stderr, "block size should be > 0: %s\n", argv[2]);
@@ -54,6 +46,18 @@ int main (int argc, char *argv[])
     fprintf(stderr, "r/w should be 'r' or 'w': %s\n", argv[3]);
     exit(EXIT_FAILURE);
   }
+
+  int fd;
+  if (write_flag)
+    fd = open(argv[1], O_CREAT|O_RDWR|O_TRUNC|O_DIRECT, 0666);
+  if (!write_flag)
+    fd = open(argv[1], O_RDWR|O_DIRECT, 0666);
+  if (fd == -1) {
+    perror(argv[1]);
+    exit(EXIT_FAILURE);
+  }
+  printf("filename:%s\n", argv[1]);
+
 
   int nloop = FILE_SIZE / block_size;
   printf("number of system call:%d\n", nloop);
@@ -78,12 +82,12 @@ int main (int argc, char *argv[])
     ssize_t ret;
     if (write_flag) {
       ret = write(fd, buf, strlen(buf));
-      if (ret == -1) {
+      if (ret < 0) {
         err(EXIT_FAILURE, "write() failed");
       }
     } else {
       ret = read(fd, buf, strlen(buf));
-      if (ret == -1) {
+      if (ret < 0) {
         err(EXIT_FAILURE, "read() failed");
       }
     }
