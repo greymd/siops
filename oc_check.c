@@ -18,7 +18,7 @@ static inline double diff_sec(struct timeval before, struct timeval after) {
 int main (int argc, char *argv[])
 {
   progname = argv[0];
-  if (argc != 2 || argc != 3) {
+  if (argc != 2 && argc != 3) {
     fprintf(stderr, "usage %s <filename> <# of loops>\n", progname);
     exit(EXIT_FAILURE);
   }
@@ -31,7 +31,7 @@ int main (int argc, char *argv[])
   gettimeofday(&before, NULL);
   int i, fd;
   for ( i = 0; i < nloop; i++) {
-    fd = open(argv[1], O_CREAT|O_RDWR|O_TRUNC|O_DIRECT, 0666);
+    fd = open(argv[1], O_CREAT|O_RDWR|O_SYNC|O_TRUNC|O_DIRECT, 0666);
     if (fd == -1) {
       err(EXIT_FAILURE, "open() failed");
     }
