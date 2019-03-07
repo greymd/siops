@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -23,8 +24,8 @@ static inline double diff_sec(struct timeval before, struct timeval after) {
 int main (int argc, char *argv[])
 {
   progname = argv[0];
-  if (argc != 3) {
-    fprintf(stderr, "usage %s <filename> <block size[KiB]>\n", progname);
+  if (argc != 4) {
+    fprintf(stderr, "usage %s <filename> <block size[KiB]> <r/w>\n", progname);
     exit(EXIT_FAILURE);
   }
 
@@ -43,6 +44,16 @@ int main (int argc, char *argv[])
   }
   printf("block size (KiB):%d\n", block_size / 1024);
   printf("file size (MiB):%d\n", FILE_SIZE / 1024 / 1024);
+
+  int write_flag;
+  if (!strcmp(argv[3], "r")) {
+    write_flag = false;
+  } else if (!strcmp(argv[3], "w")) {
+    write_flag = true;
+  } else {
+    fprintf(stderr, "r/w should be 'r' or 'w': %s\n", argv[3]);
+    exit(EXIT_FAILURE);
+  }
 
   int nloop = FILE_SIZE / block_size;
   printf("number of system call:%d\n", nloop);
@@ -64,7 +75,18 @@ int main (int argc, char *argv[])
 
   gettimeofday(&before, NULL);
   for ( i = 0; i < nloop; i++) {
-    write(fd, buf, strlen(buf));
+    ssize_t ret;
+    if (write_flag) {
+      ret = write(fd, buf, strlen(buf));
+      if (ret == -1) {
+        err(EXIT_FAILURE, "write() failed");
+      }
+    } else {
+      ret = read(fd, buf, strlen(buf));
+      if (ret == -1) {
+        err(EXIT_FAILURE, "read() failed");
+      }
+    }
   }
   gettimeofday(&after, NULL);
 
@@ -74,8 +96,7 @@ int main (int argc, char *argv[])
   printf("MiB/s: %f\n", nloop * block_size / 1024 / 1024 / sec);
 
   if (close(fd) == -1) {
-    fprintf(stderr, "close() failed");
-    exit(EXIT_FAILURE);
+    err(EXIT_FAILURE, "close() failed");
   }
   return 0;
 }
