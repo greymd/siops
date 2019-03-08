@@ -1,6 +1,6 @@
-# iops_check
+# Simple IOPS checker
 
 ```
-$ gcc -o iops_check iops_check.c
-$ ./iops_check testfile.txt 1
+$ gcc -o siops siops.c
+$ ./siops test.txt 64 w
 ```
