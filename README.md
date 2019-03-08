@@ -26,7 +26,7 @@ MiB/s: 68.986070
 
 ## Purpose
 
-There are various tool to do benchmarking volumes.
+There are various tool to do volume benchmarking.
 They are nice and well-created.
 
 On the other hand, they are complicated and it is difficult for testers to compare different conditions caused by low-level flags.
