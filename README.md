@@ -26,10 +26,10 @@ MiB/s: 68.986070
 
 ## Purpose
 
-There are various tool for volume benchmarking.
+There are various tool to do benchmarking volumes.
 They are nice and well-created.
 
-On the other hand, they are complicated and it is difficult for testers to customize.
+On the other hand, they are complicated and it is difficult for testers to compare different conditions caused by low-level flags.
 What this tool does is just counting number of `write` or `read` calls.
 It is very easy to customize because it is too simple.
 
